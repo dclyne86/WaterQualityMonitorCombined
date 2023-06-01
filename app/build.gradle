@@ -32,9 +32,9 @@ android {
             pip {
                 install "numpy"
                 install "pandas"
-                install "tensorflow"
-                install "keras"
-                install "sklearn"
+                install "tensorflow==2.1"
+                install "keras==2.3.1"
+                install "scikit-learn"
                 install "sqlalchemy"
                 install "boto3"
                 install "pymysql"
