@@ -8,7 +8,8 @@ import os
 import functions
 
 from sklearn.preprocessing import StandardScaler
-from keras.models import load_model
+from tensorflow import keras
+
 
 import pandas as pd
 from pandas import DataFrame
@@ -57,7 +58,7 @@ def get_models():
         if "Model" in filename:
             #optimal_NNs[i] = load_model(f"{path}\\{filename}")
             # TODO there could be some bugs here
-            optimal_NNs[i] = load_model(os.path.join(os.environ['HOME'], f'{path}\\{filename}'))
+            optimal_NNs[i] = keras.load_model(os.path.join(os.environ['HOME'], f'{path}\\{filename}'))
 
 
             #print(optimal_NNs[i].optimizer)
