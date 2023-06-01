@@ -101,7 +101,7 @@ class MeasData {
         pH_stats = new double[5];
         t_stats = new double[5];
 
-        backend = py.getModule("backend");
+        //backend = py.getModule("backend");
 
     }
     //Meas data calculation currently used
@@ -131,6 +131,8 @@ class MeasData {
 
         temperature = calcT(rawT);
         phValue = calcPh(rawE); //phValue = calcPh(rawE, temperature);
+
+        // TODO STEP 2
         chlorineValue = calcCl(rawI); //chlorineValue = calcCl(rawI, phValue, temperature);
         alkalinityValue = calcAlk(rawA); //chlorineValue = calcCl(rawI, phValue, temperature);
 
@@ -143,7 +145,7 @@ class MeasData {
 
 
 
-        backend = py.getModule("backend");
+        //backend = py.getModule("backend");
     }
 
     public void setpH_stats(double[] stats){
@@ -245,7 +247,7 @@ class MeasData {
         double N = t[LONGEST_RANGE] - t[0];
 
         // 18 chosen based on python code. See:
-        //https://github.com/siddij3/WQM_NN_modelling/blob/main/FC/tmp_code/Editing_data.py
+        //TODO https://github.com/siddij3/WQM_NN_modelling/blob/main/FC/tmp_code/Editing_data.py
 
         double h = (t[LONGEST_RANGE] - t[0]) / N;              // step size
         double sum = 0.5 * (current[0] + current[LONGEST_RANGE]);    // area

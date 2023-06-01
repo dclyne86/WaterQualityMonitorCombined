@@ -16,7 +16,7 @@ import android.view.MenuItem;
 public class Prefs extends AppCompatActivity {
     public final static String TAG = Prefs.class.getSimpleName();
 
-    public final static String DEF_SAMPLES = "50";
+    public final static String DEF_SAMPLES = "51";
     public final static String DEF_AVERAGE = "10";
     public final static String DEF_PHCALOFFSET = "280";
     public final static String DEF_PHCALSLOPE = "60.6";

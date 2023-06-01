@@ -327,6 +327,8 @@ public class DeviceScanActivity extends AppCompatActivity {
             mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
 
         if(mBluetoothAdapter.isEnabled() && mBluetoothLeScanner != null) {
+            Log.e(TAG, "scanLeDevice: Scanner is enabled");
+
             if (enable) {
                 // Stops scanning after a pre-defined scan period.
                 mHandler.postDelayed(new Runnable() {

@@ -906,13 +906,14 @@ public class MeasurementActivity extends AppCompatActivity
                     if((char)b == '\n'){
                         if (sbRead.length() <= MAX_READ_LINE_LEN){
                             double[] d = new double[6];
-
+                           // Log.d(TAG, "onReceive: " + sbRead.toString());
                             if(parseDataSwClAlk(sbRead,d)) {
                                 readFails = 0;
                                 if (measuring)
-                                    //d[3] = d[2];
-                                    //Log.d(TAG, "onReceive: " + d[0] + " " + d[1] + " " + d[2] + " " + d[3]);
+                                {
+                                    Log.d(TAG, String.format("onReceive: %f %f %f %f %f %f", d[0],d[1],d[2],d[3],d[4],d[5]));
                                     updateDataSwClAlk(d[0],d[1],d[2],d[3], d[4], d[5]>0.5);
+                                }
                             } else {
                                 //parse failed, if three consecutive fails prompt user
                                 readFails++;
@@ -1176,12 +1177,13 @@ public class MeasurementActivity extends AppCompatActivity
         double avgValues[] = new double[5];
         double pH_stats[] = new double[5];
         double t_stats[] = new double[5];
-        MeasData m = new MeasData(t,e,i,alk, phCalOffset,phCalSlopeLo,phCalSlopeHi,tCalOffset,tCalSlope);
+        MeasData m = new MeasData(t,e,i,alk, phCalOffset,phCalSlopeLo,phCalSlopeHi,tCalOffset,tCalSlope); // TODO STEP 1
         measList.add(m);
 
         if(measList.size() > maxSampleSize)
             measList.remove(0);
         // calculate average values, return if averaging operation was successful
+        // TODO if the program reaches 50 s, restart from 0 again? Maybe
         success = true;// calcAverages(avgValues, avgSampleSize);
 
 
