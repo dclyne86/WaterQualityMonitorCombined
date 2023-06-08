@@ -4,13 +4,24 @@ import functions
 
 from sqlalchemy import create_engine
 from sqlalchemy import text
+import logins
 
-import file_management
+def get_creds_cloud():
+    server = logins.server
+    database =  logins.database
+    username =  logins.username
+    password = logins.password
+    port = 3306
 
-from sklearn.preprocessing import StandardScaler
-from sklearn.utils import shuffle
+    con = f'mysql+pymysql://{username}:{password}@{server}/{database}'
+    return con
 
+def connect():
+    engine = create_engine(
+        get_creds_cloud(),
+        pool_recycle=3600)
 
+    return engine
 def get_table_name():
     return functions.get_table_name()
 

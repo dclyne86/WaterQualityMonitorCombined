@@ -51,6 +51,7 @@ import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -161,6 +162,9 @@ public class MeasurementActivity extends AppCompatActivity
     //Array list for storing measurements
     private List<MeasData> measList = new ArrayList<>();
 
+    private List<Double> measListParams = new ArrayList<>();
+    private List<Double> measTimeParams = new ArrayList<>();
+
 
     //Location Services
     private GoogleApiClient mGoogleApiClient;
@@ -180,6 +184,12 @@ public class MeasurementActivity extends AppCompatActivity
 
     //Values from preferences
     private int maxSampleSize;
+
+    private int minIntegralLength;
+
+    private double integralCalculated = 0;
+
+    private int maxMeasurementLength;
     private int avgSampleSize;
     private boolean displayAdvCal;
     private double phCalOffset;
@@ -215,7 +225,6 @@ public class MeasurementActivity extends AppCompatActivity
             int seconds = (int) (millis / 1000);
             int minutes = seconds / 60;
             seconds = seconds % 60;
-
 
             Random rand = new Random();
 
@@ -703,6 +712,10 @@ public class MeasurementActivity extends AppCompatActivity
         maxSampleSize = Integer.parseInt(sharedPrefs.getString("pref_samples",Prefs.DEF_SAMPLES));
         avgSampleSize = Integer.parseInt(sharedPrefs.getString("pref_average",Prefs.DEF_AVERAGE));
         displayAdvCal = sharedPrefs.getBoolean("pref_displayAdvCal", false);
+        minIntegralLength = Integer.parseInt(sharedPrefs.getString("pref_integrals",Prefs.DEF_INTEGRALS));
+
+        maxMeasurementLength = Integer.parseInt(sharedPrefs.getString("pref_full",Prefs.DEF_FULL_SAMPLES));
+
 
         phCalOffset = Double.parseDouble(sharedPrefs.getString("pref_cal_ph7",Prefs.DEF_PHCALOFFSET));
         defVal = Double.valueOf(Prefs.DEF_PHCALOFFSET) + Double.valueOf(Prefs.DEF_PHCALSLOPE) * 3; //default ph10 potential
@@ -910,7 +923,8 @@ public class MeasurementActivity extends AppCompatActivity
                             if(parseDataSwClAlk(sbRead,d)) {
                                 readFails = 0;
                                 if (measuring)
-                                {
+                                {   //      0    1             2,    3,     4,    5
+                                     // V temp, V pH, I Chlorine, I Alk,  Time, ON/OFF
                                     Log.d(TAG, String.format("onReceive: %f %f %f %f %f %f", d[0],d[1],d[2],d[3],d[4],d[5]));
                                     updateDataSwClAlk(d[0],d[1],d[2],d[3], d[4], d[5]>0.5);
                                 }
@@ -1177,13 +1191,16 @@ public class MeasurementActivity extends AppCompatActivity
         double avgValues[] = new double[5];
         double pH_stats[] = new double[5];
         double t_stats[] = new double[5];
-        MeasData m = new MeasData(t,e,i,alk, phCalOffset,phCalSlopeLo,phCalSlopeHi,tCalOffset,tCalSlope); // TODO STEP 1
+        MeasData m = new MeasData(t,e,i,alk, phCalOffset,phCalSlopeLo,phCalSlopeHi,tCalOffset,tCalSlope);
+
         measList.add(m);
 
         if(measList.size() > maxSampleSize)
-            measList.remove(0);
+            measList.clear();
+            //measList.remove(0);
+
         // calculate average values, return if averaging operation was successful
-        // TODO if the program reaches 50 s, restart from 0 again? Maybe
+
         success = true;// calcAverages(avgValues, avgSampleSize);
 
 
@@ -1260,14 +1277,35 @@ public class MeasurementActivity extends AppCompatActivity
 
         //TODO find alkalinity offset values
         //TODO compile all 51 datapoints for Free chlorine, and send for transformation
+        // TODO STEP 1
+        // TODO if the program reaches 50 s, restart from 0 again? Maybe
 
-        Log.d(TAG, String.format("updateDataSwClAlk: alk: %.3f", a ));
-        MeasData m = new MeasData(t,e,i,a, tMeas,swOn,phCalOffset,phCalSlopeLo,phCalSlopeHi,tCalOffset,tCalSlope,ClCalOffset,ClCalLevel,ClCalSlope, alkCalOffset, alkCalLevel, alkCalSlope);
+
+
+//        if ((double)(int)tMeas == tMeas){
+//            measListParams.add(i);
+//            measTimeParams.add(tMeas);
+//        }
+
+       // if (measListParams.size() == minIntegralLength)
+         //   integralCalculated = calcIntegral(measListParams, measTimeParams);
+
+        // See how Dennis calculates the data; is it at 50 s or throughout?
+        // Can only be done with the FCl sensor
+
+       // Log.d(TAG, String.format("updateDataSwClAlk: alk: %.3f; integral %.3f", a, integralCalculated));
+//        Log.d(TAG, String.format("updateDataSwClAlk: size: " + measListParams.size()));
+
+        MeasData m = new MeasData(t,e,i,a, tMeas,swOn, integralCalculated, phCalOffset,phCalSlopeLo,phCalSlopeHi,tCalOffset,tCalSlope,ClCalOffset,ClCalLevel,ClCalSlope, alkCalOffset, alkCalLevel, alkCalSlope);
 
         measList.add(m);
 
         if(measList.size() > maxSampleSize)
             measList.remove(0);
+
+//        if (measList.size() > maxMeasurementLength)
+//            measListParams.clear();
+
         // calculate average values, return if averaging operation was successful
         success = calcAverages(avgValues, avgSampleSize);
         
@@ -1292,7 +1330,6 @@ public class MeasurementActivity extends AppCompatActivity
 
 
         //Update charts
-
         // update calibration chart
         List<Double> pH_valuesList = getDoubleFromMeasList(avgSampleSize, MeasData.RAW_VOLTAGE);
         List<Double> t_valuesList = getDoubleFromMeasList(avgSampleSize, MeasData.RAW_TEMPERATURE);
@@ -1334,6 +1371,8 @@ public class MeasurementActivity extends AppCompatActivity
 
         return success;
     }
+
+
 
     private List<Number> getNumbersFromMeasList(int maxLength, int valIndex){
         //length of returned list is less of provided maxLength and measList size
@@ -1577,6 +1616,39 @@ public class MeasurementActivity extends AppCompatActivity
         }
     }
 
+    private double calcIntegral(List<Double> current, List<Double> t) {
+        // TODO just validate this and make sure it works properly
+
+        Log.d(TAG, String.format("calcIntegral: T BEF: " + t.toString()));
+
+        for(int i = 0; i < t.size(); i++) {
+            if (t.get(i) > 26 ) {
+                current.remove(i);
+                t.remove(i);
+            }
+        }
+        Log.d(TAG, String.format("calcIntegral: T AFT: " + t.toString()));
+
+        double[] aCurrent = new double[current.size()];
+        for(int i = 0; i < current.size(); i++) aCurrent[i] = current.get(i);
+
+        double[] aTime = new double[t.size()];
+        for(int i = 0; i < t.size(); i++) aTime[i] = t.get(i);
+
+        double a, b;
+        double N = aTime[aTime.length-1] - aTime[0];                    // Number of data points         // step size
+        double sum = 0.5 * (aCurrent[0] + aCurrent[aTime.length-1]);    // area
+
+        Log.d(TAG, String.format("calcIntegral: Num Points: " + N));
+        Log.d(TAG, String.format("calcIntegral: Time: " + aCurrent.length));
+        Log.d(TAG, String.format("calcIntegral: elements: " + Arrays.toString(aTime)));
+
+        for (int i = 1; i < N; i++)
+            sum += aCurrent[i];
+
+        return sum ;
+    }
+
     private boolean calcAverages(double[] avg, int samples){
         double scratch[] = new double[] {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // scratch double array for calculating sum
         if (avg.length != 6){//invalid array length
@@ -1589,12 +1661,12 @@ public class MeasurementActivity extends AppCompatActivity
             try{
 
                     for (int i = 0; i < samples; i++) {
-                    scratch[0] = scratch[0] + (double)measList.get(s-i-1).getValue(MeasData.CALC_TEMPERATURE);
-                    scratch[1] = scratch[1] + (double)measList.get(s-i-1).getValue(MeasData.CALC_PH);
-                    scratch[2] = scratch[2] + (double)measList.get(s-i-1).getValue(MeasData.CALC_CL);
-                    scratch[3] = scratch[3] + (double)measList.get(s-i-1).getValue(MeasData.CALC_ALK);
-                    scratch[4] = scratch[4] + (double)measList.get(s-i-1).getValue(MeasData.RAW_TEMPERATURE);
-                    scratch[5] = scratch[5] + (double)measList.get(s-i-1).getValue(MeasData.RAW_VOLTAGE);
+                        scratch[0] = scratch[0] + (double)measList.get(s-i-1).getValue(MeasData.CALC_TEMPERATURE);
+                        scratch[1] = scratch[1] + (double)measList.get(s-i-1).getValue(MeasData.CALC_PH);
+                        scratch[2] = scratch[2] + (double)measList.get(s-i-1).getValue(MeasData.CALC_CL);
+                        scratch[3] = scratch[3] + (double)measList.get(s-i-1).getValue(MeasData.CALC_ALK);
+                        scratch[4] = scratch[4] + (double)measList.get(s-i-1).getValue(MeasData.RAW_TEMPERATURE);
+                        scratch[5] = scratch[5] + (double)measList.get(s-i-1).getValue(MeasData.RAW_VOLTAGE);
                         //TODO add alkalinity here
 
                     }

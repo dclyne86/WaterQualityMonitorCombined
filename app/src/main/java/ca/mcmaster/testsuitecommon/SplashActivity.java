@@ -31,9 +31,6 @@ import android.util.Log;
 
 import android.view.View;
 
-import com.amplifyframework.AmplifyException;
-import com.amplifyframework.core.Amplify;
-import com.amplifyframework.datastore.DataStorePlugin;
 
 import android.widget.Button;
 //import ca.mcmaster.waterqualitymonitorsuite.DeviceScanActivity;
@@ -47,8 +44,6 @@ public class SplashActivity extends AppCompatActivity {
     private static final String TAG = SplashActivity.class.getSimpleName();
 
     private static final int PERMISSION_RESPONSE = 2;
-
-    private Application mActivityAmplifyAWS;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -87,12 +82,6 @@ public class SplashActivity extends AppCompatActivity {
 
         }
 
-        try {
-            Amplify.configure(getApplicationContext());
-            Log.i("MyAmplifyApp", "Initialized Amplify");
-        } catch (AmplifyException error) {
-            Log.e("MyAmplifyApp", "Could not initialize Amplify", error);
-        }
         Button btnLaunchWQM = (Button) findViewById(R.id.btnLaunchWQM);
         btnLaunchWQM.setOnClickListener(new View.OnClickListener() {
             @Override

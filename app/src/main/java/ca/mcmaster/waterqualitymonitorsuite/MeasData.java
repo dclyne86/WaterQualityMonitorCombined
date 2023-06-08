@@ -44,10 +44,12 @@ class MeasData {
 
     private double phCal7, phSensLo, phSensHi; // Calibration values used for pH calculation
     private double Cl_Cal_i, Cl_Cal_lvl, Cl_Sens; // Calibration values used for free Cl calculation
-    private double Alk_Cal_i, Alk_Cal_lvl, Alk_Sens; // Calibration values used for free Cl calculation
+    private double Alk_Cal_i, Alk_Cal_lvl, Alk_Sens; // Calibration values used for Alk calculation
 
     private double tCal, tSens; //Calibration values for T calculation
     private double temperature, phValue, chlorineValue, alkalinityValue; //Calculated temperature, pH, and free Cl
+
+    private double integral, predictedChlorineValue;   // Used for calculating the integral of the FCl curve
     private double rawT, rawE, rawI; //Raw values for temperature, voltage (pH), current (Cl)
 
     private double rawA; //Raw value for alkalinity
@@ -105,12 +107,16 @@ class MeasData {
 
     }
     //Meas data calculation currently used
-    MeasData(double rawT, double rawE, double rawI, double rawA, double measTime, boolean swOn, double phCal7, double phSensLo, double phSensHi, double tCal, double tSens, double Cl_Cal_i, double Cl_Cal_lvl, double Cl_Sens, double Alk_Cal_i, double Alk_Cal_lvl, double Alk_Sens){
-  //MeasData(           t,          e,           i,           a,            tMeas,s        wOn,   phCalOffset,    phCalSlopeLo,    phCalSlopeHi,   tCalOffset,   tCalSlope,      ClCalOffset,       ClCalLevel,ClCalSlope, alkCalOffset, alkCalLevel, alkCalSlope)
+    MeasData(double rawT, double rawE, double rawI, double rawA, double measTime, boolean swOn, double integral, double phCal7, double phSensLo, double phSensHi, double tCal, double tSens, double Cl_Cal_i, double Cl_Cal_lvl, double Cl_Sens, double Alk_Cal_i, double Alk_Cal_lvl, double Alk_Sens){
+  //MeasData(           t,          e,           i,           a,            tMeas,s        wOn, integralCalculated, phCalOffset,    phCalSlopeLo,    phCalSlopeHi,   tCalOffset,   tCalSlope,      ClCalOffset,       ClCalLevel,ClCalSlope, alkCalOffset, alkCalLevel, alkCalSlope)
+        //             V TEMP     V pH,      I Chlorine,    I Alk,            TIme,
         this.rawT = rawT;
         this.rawE = rawE;
         this.rawI = rawI;
         this.rawA = rawA;
+
+        this.integral = integral;
+
 
         this.phCal7 = phCal7;
         this.phSensLo = phSensLo;
@@ -132,9 +138,11 @@ class MeasData {
         temperature = calcT(rawT);
         phValue = calcPh(rawE); //phValue = calcPh(rawE, temperature);
 
-        // TODO STEP 2
+        // TODO STEP 2; Feed it into a thing which can be made into a dictionary
         chlorineValue = calcCl(rawI); //chlorineValue = calcCl(rawI, phValue, temperature);
         alkalinityValue = calcAlk(rawA); //chlorineValue = calcCl(rawI, phValue, temperature);
+
+        predictedChlorineValue = predictCl(measTime, rawI, rawE, rawT, integral);
 
         timeStamp = new SimpleDateFormat("HH:mm:ss", Locale.CANADA).format(new Date());
 
@@ -145,7 +153,7 @@ class MeasData {
 
 
 
-        //backend = py.getModule("backend");
+        backend = py.getModule("backend");
     }
 
     public void setpH_stats(double[] stats){
@@ -236,47 +244,29 @@ class MeasData {
     }
 
 
-    static double f(double x) {
-        return Math.exp(- x * x / 2) / Math.sqrt(2 * Math.PI);
-    }
 
-    public double calcIntegral(double[] current, double[] t) {
-        int LONGEST_RANGE = 26;
+    private double predictCl(double measTime, double rawClCurrent, double rawpH, double rawTemp, double integral) {
+        // Inside the python code, check pH and Temp if they're actual values or something
 
-        double a, b;
-        double N = t[LONGEST_RANGE] - t[0];
+        double pH = calcPh(rawpH);
+        double Temp = rawTemp;
 
-        // 18 chosen based on python code. See:
-        //TODO https://github.com/siddij3/WQM_NN_modelling/blob/main/FC/tmp_code/Editing_data.py
-
-        double h = (t[LONGEST_RANGE] - t[0]) / N;              // step size
-        double sum = 0.5 * (current[0] + current[LONGEST_RANGE]);    // area
+        double clCurrent = rawClCurrent; // Properly offeset this
+        Log.d(TAG, String.format("predictCl: %.3f;  %.3f;  %.3f", measTime, rawClCurrent, integral));
 
 
-        for (int i = 1; i < N; i++) {
-            int x = (int)t[0] + (int)h * i;
-            sum += current[x];
-        }
 
-        return sum * h;
+//        double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, temperature, integral).toString());
 
+        return 0;
     }
 
 
-  /*Cl calculation from supplied, current, pH and temperature
-  broken up to simplify calculation, f_* = function of *
+      /*Cl calculation from supplied, current, pH and temperature
+      broken up to simplify calculation, f_* = function of *
 
-  C = k*(f_i/sf_t)*f_ph_t
-  where f_ph_t = 1+10^(ph - f_t) */
-
-    private double predictCl() {
-
-        // double flcConc = Float.parseFloat(backend.)
-
-
-        return 1;
-    }
-
+      C = k*(f_i/sf_t)*f_ph_t
+      where f_ph_t = 1+10^(ph - f_t) */
     private double calcCl(double i, double ph, double t){
         double k, f_i, sf_t, f_ph_t, f_t, t2, result;
         Log.d(TAG, String.format("calcCl: i: %.3f ph: %.3f t: %.2f",i,ph,t));
@@ -297,28 +287,6 @@ class MeasData {
         Log.d(TAG, String.format("calcCl: k: %.3f f_i: %.3f sf_t: %.3f f_t: %.3f f_ph_t: %.3f Cl: %.3f",k,f_i,sf_t,f_t,f_ph_t,result));
         return result;
     }
-/*
-    private double calcAlk(double a, double ph, double t){
-        double k, f_a, sf_t, f_ph_t, f_t, t2, result;
-        Log.d(TAG, String.format("calcAlk: i: %.3f ph: %.3f t: %.2f",a,ph,t));
-
-        k = 0.57;
-        f_a = a - Alk_Cal_i;
-        sf_t = Alk_Sens + (t-27) * 9.3;
-        t2 = t + 273;
-        f_t = (3000/t2)-10.0686+(0.0253*t2);
-        f_ph_t = 1 + Math.pow(10,ph - f_t);
-
-        result = k*(f_a/sf_t)*f_ph_t + Alk_Cal_lvl;
-
-        //Set to zero if result is negative (ppm can not be negative)
-        if (result < 0)
-            result = 0.0;
-
-        Log.d(TAG, String.format("calcCl: k: %.3f f_a: %.3f sf_t: %.3f f_t: %.3f f_ph_t: %.3f Cl: %.3f",k,f_a,sf_t,f_t,f_ph_t,result));
-        return result;
-    }
-*/
     //simplified free Cl calculation, does not consider pH level or temperate
     private double calcCl(double i){
         double k, f_i, result;
@@ -338,7 +306,6 @@ class MeasData {
             result = 0.0;
 
         //Log.d(TAG, String.format("calcCl: k: %.3f f_i: %.3f Cl: %.3f",k,f_i,result));
-        //TODO
         return result;
     }
     //simplified Alk calculation, does not consider pH level or temperate

@@ -7,52 +7,22 @@
 import os
 import functions
 
-from sklearn.preprocessing import StandardScaler
 from tensorflow import keras
-
-
-import pandas as pd
-from pandas import DataFrame
-import aws
-import file_management
-import sql_manager
-
-from sql_manager import sql_to_pandas
-
-from sql_manager import pandas_to_sql_if_exists
-
-import re
-import tensorflow as tf
 import numpy as np
+import file_management
 
 
-def get_models():
-    global optimal_NNs, sensor_data
+k_folds = functions.get_num_folds()
+optimal_NNs = [None]*k_folds
+def download_models():
+    global optimal_NNs
 
-    ## DATA IMPORTING AND HANDLING
-    engine = aws.connect()
+    path = file_management.get_file_path()
 
-    # The dataset should be the 50 s array of time from the app
-    # TODO GET SENSOR DATA
-    sensor_data = "get from app"
-    table_name = sql_manager.get_table_name()
-    std_params = sql_to_pandas(sql_manager.get_params_table_name(), engine)
-
-    # GET FILE FROM S3 BUCKET, UNZIP IT,
-    path = file_management.get_file_path() #os.path.join(os.environ['HOME'], f'{folder_name}')
-    s3 = aws.s3_bucket()
-
-    # TODO train gold_fc_prod models without Rinse, and one without Temp/pH
-    aws.load_from_bucket(s3, path, table_name)
-
-    # Downloading files and such
-    k_folds = functions.get_num_folds()
+    functions.load_from_cloud()
     local_download_path = os.path.join(os.environ['HOME'], f'{path}')
 
-    optimal_NNs = [None]*k_folds
-
     i = 0
-    tmp = ""
     for filename in os.listdir(local_download_path):
 
         if "Model" in filename:
@@ -65,15 +35,20 @@ def get_models():
             i+=1
 
 
+    return
 
-def calculate_ppm():
 
+def predict_Cl(time, current, pH, temp, integrals):
+
+    sensor_data = np.array([time, current, pH, temp, integrals])
     k_folds = functions.get_num_folds()
     tmp_ppm = [None]*k_folds
     for fold in range(k_folds):
         tmp_ppm[fold] = functions.predict_ppm(optimal_NNs[fold], sensor_data)
 
     return sum(tmp_ppm)/k_folds
+
+
 
 
 

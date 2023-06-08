@@ -36,8 +36,8 @@ android {
                 install "keras==2.3.1"
                 install "scikit-learn"
                 install "sqlalchemy"
-                install "boto3"
-                install "pymysql"
+                install "cloudinary"
+                install "requests"
             }
         }
 
@@ -59,8 +59,6 @@ dependencies {
     androidTestImplementation('androidx.test.espresso:espresso-core:3.5.1', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    implementation 'com.amplifyframework:core:1.4.0'
-    implementation 'com.amplifyframework:aws-auth-cognito:1.4.0'
 
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'

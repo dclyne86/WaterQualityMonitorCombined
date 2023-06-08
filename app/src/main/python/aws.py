@@ -5,13 +5,6 @@ import secret
 from sqlalchemy import create_engine
 import functions
 
-def s3_bucket():
-    return boto3.resource(
-        service_name='s3',
-        region_name='us-east-2',
-
-    )
-
 
 def save_to_bucket(s3, filename):
     s3.meta.client.upload_file(filename, get_bucket_name(), filename)
@@ -35,15 +28,6 @@ def get_bucket_name():
     return 'wqm-ml-models'
 
 
-def get_creds():
-    server = secret.server
-    database = secret.databse
-    username = secret.username
-    password = secret.password
-    port = 3306
-
-    con = f'mysql+pymysql://{username}:{password}@{server}:{port}/{database}'
-    return con
 
 def connect():
 
