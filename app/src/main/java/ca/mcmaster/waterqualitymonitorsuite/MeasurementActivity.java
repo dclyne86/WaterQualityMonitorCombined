@@ -40,6 +40,9 @@ import com.androidplot.xy.XYGraphWidget;
 import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYSeries;
 
+import com.chaquo.python.PyObject;
+import com.chaquo.python.Python;
+
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
@@ -213,7 +216,6 @@ public class MeasurementActivity extends AppCompatActivity
 
     //Timer functionality, used only for demo mode to simulate samples
     long startTime = 0;
-
 
 
     Handler timerHandler = new Handler();
@@ -1282,29 +1284,20 @@ public class MeasurementActivity extends AppCompatActivity
 
 
 
-//        if ((double)(int)tMeas == tMeas){
+//        if (tMeas >= 50 && Math.floor(tMeas)  == tMeas){
 //            measListParams.add(i);
 //            measTimeParams.add(tMeas);
 //        }
 
-       // if (measListParams.size() == minIntegralLength)
-         //   integralCalculated = calcIntegral(measListParams, measTimeParams);
-
         // See how Dennis calculates the data; is it at 50 s or throughout?
         // Can only be done with the FCl sensor
 
-       // Log.d(TAG, String.format("updateDataSwClAlk: alk: %.3f; integral %.3f", a, integralCalculated));
-//        Log.d(TAG, String.format("updateDataSwClAlk: size: " + measListParams.size()));
-
-        MeasData m = new MeasData(t,e,i,a, tMeas,swOn, integralCalculated, phCalOffset,phCalSlopeLo,phCalSlopeHi,tCalOffset,tCalSlope,ClCalOffset,ClCalLevel,ClCalSlope, alkCalOffset, alkCalLevel, alkCalSlope);
+        MeasData m = new MeasData(t,e,i,a, tMeas,swOn, phCalOffset,phCalSlopeLo,phCalSlopeHi,tCalOffset,tCalSlope,ClCalOffset,ClCalLevel,ClCalSlope, alkCalOffset, alkCalLevel, alkCalSlope);
 
         measList.add(m);
 
         if(measList.size() > maxSampleSize)
             measList.remove(0);
-
-//        if (measList.size() > maxMeasurementLength)
-//            measListParams.clear();
 
         // calculate average values, return if averaging operation was successful
         success = calcAverages(avgValues, avgSampleSize);

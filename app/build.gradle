@@ -33,11 +33,13 @@ android {
                 install "numpy"
                 install "pandas"
                 install "tensorflow==2.1"
-                install "keras==2.3.1"
+                install "keras==2.12.0"
                 install "scikit-learn"
                 install "sqlalchemy"
                 install "cloudinary"
                 install "requests"
+
+
             }
         }
 

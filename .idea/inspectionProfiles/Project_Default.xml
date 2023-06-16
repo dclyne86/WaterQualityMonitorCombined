@@ -5,6 +5,9 @@
       <option name="ignoredIdentifiers">
         <list>
           <option value="python.sql_manager.sklearn" />
+          <option value="python.backend.print" />
+          <option value="python.backend.*" />
+          <option value="numpy" />
         </list>
       </option>
     </inspection_tool>

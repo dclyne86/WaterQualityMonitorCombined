@@ -103,20 +103,17 @@ class MeasData {
         pH_stats = new double[5];
         t_stats = new double[5];
 
-        //backend = py.getModule("backend");
+        backend = py.getModule("backend");
 
     }
     //Meas data calculation currently used
-    MeasData(double rawT, double rawE, double rawI, double rawA, double measTime, boolean swOn, double integral, double phCal7, double phSensLo, double phSensHi, double tCal, double tSens, double Cl_Cal_i, double Cl_Cal_lvl, double Cl_Sens, double Alk_Cal_i, double Alk_Cal_lvl, double Alk_Sens){
-  //MeasData(           t,          e,           i,           a,            tMeas,s        wOn, integralCalculated, phCalOffset,    phCalSlopeLo,    phCalSlopeHi,   tCalOffset,   tCalSlope,      ClCalOffset,       ClCalLevel,ClCalSlope, alkCalOffset, alkCalLevel, alkCalSlope)
+    MeasData(double rawT, double rawE, double rawI, double rawA, double measTime, boolean swOn, double phCal7, double phSensLo, double phSensHi, double tCal, double tSens, double Cl_Cal_i, double Cl_Cal_lvl, double Cl_Sens, double Alk_Cal_i, double Alk_Cal_lvl, double Alk_Sens){
+  //MeasData(           t,          e,           i,           a,            tMeas,s        swOn, integralCalculated, phCalOffset,    phCalSlopeLo,    phCalSlopeHi,   tCalOffset,   tCalSlope,      ClCalOffset,       ClCalLevel,ClCalSlope, alkCalOffset, alkCalLevel, alkCalSlope)
         //             V TEMP     V pH,      I Chlorine,    I Alk,            TIme,
         this.rawT = rawT;
         this.rawE = rawE;
         this.rawI = rawI;
         this.rawA = rawA;
-
-        this.integral = integral;
-
 
         this.phCal7 = phCal7;
         this.phSensLo = phSensLo;
@@ -142,7 +139,12 @@ class MeasData {
         chlorineValue = calcCl(rawI); //chlorineValue = calcCl(rawI, phValue, temperature);
         alkalinityValue = calcAlk(rawA); //chlorineValue = calcCl(rawI, phValue, temperature);
 
-        predictedChlorineValue = predictCl(measTime, rawI, rawE, rawT, integral);
+
+        backend = py.getModule("backend");
+        this.integral = transformIntegral(measTime, rawI, swOn);
+
+
+        //predictedChlorineValue = predictCl(measTime, rawI, rawE, rawT, integral);
 
         timeStamp = new SimpleDateFormat("HH:mm:ss", Locale.CANADA).format(new Date());
 
@@ -153,7 +155,6 @@ class MeasData {
 
 
 
-        backend = py.getModule("backend");
     }
 
     public void setpH_stats(double[] stats){
@@ -163,9 +164,7 @@ class MeasData {
         }
     }
 
-    public double[] getpH_stats(){
-        return pH_stats;
-    }
+    public double[] getpH_stats(){return pH_stats;}
 
     public void setT_stats(double[] stats){
         if (stats.length == t_stats.length) {
@@ -174,9 +173,7 @@ class MeasData {
         }
     }
 
-    public double[] getT_stats(){
-        return t_stats;
-    }
+    public double[] getT_stats(){ return t_stats; }
 
 
     public boolean getAvgOk(){
@@ -254,13 +251,23 @@ class MeasData {
         double clCurrent = rawClCurrent; // Properly offeset this
         Log.d(TAG, String.format("predictCl: %.3f;  %.3f;  %.3f", measTime, rawClCurrent, integral));
 
-
-
 //        double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, temperature, integral).toString());
 
         return 0;
     }
 
+    private double transformIntegral(double measTime, double rawClCurrent, boolean switchOn) {
+
+        String strIntegral = backend.callAttr("transform_data",
+                measTime, rawClCurrent, switchOn).toString();
+
+        //double integral = Float.parseFloat(strIntegral);
+
+        Log.d(TAG, "transformIntegral: " + strIntegral);
+        Log.d(TAG, "transformIntegral: " + String.valueOf(measTime));
+
+        return integral;
+    }
 
       /*Cl calculation from supplied, current, pH and temperature
       broken up to simplify calculation, f_* = function of *
@@ -311,14 +318,14 @@ class MeasData {
     //simplified Alk calculation, does not consider pH level or temperate
     private double calcAlk(double a) {
         double k, f_a, result;
-        Log.d(TAG, String.format("calcAlk: a: %.3f ", a));
-        Log.d(TAG, String.format("calcAlk: Offset: %.3f", Alk_Cal_i));
+        //Log.d(TAG, String.format("calcAlk: a: %.3f ", a));
+        //Log.d(TAG, String.format("calcAlk: Offset: %.3f", Alk_Cal_i));
         k = 1.0;
         f_a = a - Alk_Cal_i;
 
         result = k*(f_a/Alk_Sens) + Alk_Cal_lvl;
 
-        Log.d(TAG, String.format("calcAlk: k: %.3f f_a: %.3f Alk: %.3f",k,f_a,result));
+        //Log.d(TAG, String.format("calcAlk: k: %.3f f_a: %.3f Alk: %.3f",k,f_a,result));
         //Set to zero if result is negative (ppm can not be negative)
         if (result < 0)
             result = 0.0;

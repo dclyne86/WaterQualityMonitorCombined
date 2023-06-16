@@ -37,6 +37,9 @@ import android.widget.Button;
 import ca.mcmaster.waterqualitymonitorsuite.R;
 import android.app.Application;
 
+import com.chaquo.python.PyObject;
+import com.chaquo.python.Python;
+
 /**
  * Start up activity, allows user to select experiment application to use
  */
@@ -44,11 +47,17 @@ public class SplashActivity extends AppCompatActivity {
     private static final String TAG = SplashActivity.class.getSimpleName();
 
     private static final int PERMISSION_RESPONSE = 2;
+    private PyObject backend;
+    private final Python py = Python.getInstance();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
+
+        backend = py.getModule("backend");
+
+
         //getSupportActionBar().setTitle(R.string.title_splash);// TODO: 2017-11-29
 
         // Prompt for permissions
@@ -87,6 +96,7 @@ public class SplashActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 final Intent intent = new Intent(SplashActivity.this,DeviceScanActivity.class);
+                // Log.d(TAG, "onClick: " + backend.callAttr("download_models").toString());
                 intent.putExtra(DeviceScanActivity.EXTRAS_SELECTED_APP, "WQM");
                 startActivity(intent);
             }
