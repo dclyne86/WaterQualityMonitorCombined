@@ -8,20 +8,6 @@ import shutil
 
 import os
 
-
-import file_management
-
-def get_dict(tt_feats):
-    dict = {
-        'Time':tt_feats[:, 0],
-        'Current':tt_feats[:, 1],
-        'pH Elapsed':tt_feats[:, 2] ,
-        'Temperature':tt_feats[:, 3],
-        'Rinse':tt_feats[:, 4],
-        'Integrals':tt_feats[:, 5]
-    }
-    return DataFrame(dict)
-
 def get_model_folder_name():
     return "gold_fc_h5"
 

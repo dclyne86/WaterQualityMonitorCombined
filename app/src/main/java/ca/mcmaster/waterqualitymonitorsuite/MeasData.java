@@ -143,9 +143,9 @@ class MeasData {
         backend = py.getModule("backend");
         this.integral = transformIntegral(measTime, rawI, swOn);
 
-//        if (this.integral > 0.0) {
+        if (this.integral > 0.0) {
             predictedChlorineValue = predictCl(measTime, rawI, rawE, rawT, integral);
-//        }
+        }
 
         timeStamp = new SimpleDateFormat("HH:mm:ss", Locale.CANADA).format(new Date());
 
@@ -239,35 +239,49 @@ class MeasData {
     }
 
 
+    private double transformIntegral(double measTime, double rawClCurrent, boolean switchOn) {
+
+
+        String strIntegral = backend.callAttr("manage_data",
+                measTime, rawClCurrent, switchOn).toString();
+        Log.d(TAG, "transformIntegral: " + strIntegral);
+
+        double integral = Float.parseFloat(strIntegral);
+
+        return integral;
+    }
+
+    private double predictPH(double e) {
+        String strIntegral = backend.callAttr("predict_pH",
+                measTime, e).toString();
+        Log.d(TAG, "transformIntegral: " + strIntegral);
+
+        return 0.0;
+    }
+
+    private double predictT(double e) {
+        return 0.0;
+    }
+
 
     private double predictCl(double measTime, double rawClCurrent, double rawpH, double rawTemp, double integral) {
         // Inside the python code, check pH and Temp if they're actual values or something
 
         double pH = calcPh(rawpH);
-        double Temp = rawTemp;
+//        double pH = predictPH(rawpH);
+        double Temp = calcT(rawTemp);
+//        double Temp = predictT(rawTemp);
+
 
         double clCurrent = rawClCurrent; // Properly offeset this
         Log.d(TAG, String.format("predictCl: %.3f;  %.3f;  %.3f", measTime, rawClCurrent, integral));
 
-//        double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, temperature, integral).toString());
-        String strFcl = (backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, temperature, integral).toString());
-        Log.d(TAG, String.format("predictCl_: " +  strFcl));
+//        double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, Temp, integral).toString());
+        double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, phValue, temperature, integral).toString());
+//        String strFcl = (backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, temperature, integral).toString());
+        Log.d(TAG, String.format("predictCl_: " +  String.format("%.3f", fcl)));
 
-        return 0;
-    }
-
-    private double transformIntegral(double measTime, double rawClCurrent, boolean switchOn) {
-
-        String strIntegral = backend.callAttr("transform_data",
-                measTime, rawClCurrent, switchOn).toString();
-
-        Log.d(TAG, "transformIntegral: " + strIntegral);
-
-        double integral = Float.parseFloat(strIntegral);
-
-//        Log.d(TAG, "transformIntegral: " + String.valueOf(measTime));
-//
-        return integral;
+        return fcl;
     }
 
       /*Cl calculation from supplied, current, pH and temperature

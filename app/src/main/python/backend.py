@@ -11,7 +11,6 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import Adam
 
 import numpy as np
-import file_management
 
 import tensorflow as tf
 import cloudinary
@@ -30,8 +29,8 @@ integrals = 0.
 time, pH, current, temperature = [], [], [], []
 longest_range_for_diff = 26
 
-def transform_data(currTime, curCurrent, switchOn):
-    global integrals, time
+def manage_data(currTime, curCurrent, switchOn):
+    global integrals, time, current, pH, temperature
 
     if not switchOn and currTime < 50:
         time = []
@@ -44,8 +43,12 @@ def transform_data(currTime, curCurrent, switchOn):
         current.append(curCurrent)
 
     if len(time) >= longest_range_for_diff:
-        integrals = np.trapz(time[:longest_range_for_diff], current[:longest_range_for_diff])
+        integrals = getIntegrals(time, current)
 
+    return integrals
+
+def getIntegrals(time, current):
+    integrals = np.trapz(time[:longest_range_for_diff], current[:longest_range_for_diff])
     return integrals
 
 def download_models():
@@ -80,22 +83,28 @@ def download_models():
 
 def predict_Cl(time, current, pH, temp, integrals):
 
-    sensor_data = np.array([[time], [current], [pH], [temp], [integrals]])
+    sensor_data = np.array([[time, current, pH, temp, 1, integrals]])
 
     import pandas as pd
-    # sensor_data = pd.DataFrame(sensor_data,
-    #                             columns=['Time', 'Current','pH', 'Temp', 'Integrals'])
+    sensor_data = pd.DataFrame(sensor_data,
+                                columns=['Time', 'Current','pH', 'Temp', 'Rinse', 'Integrals'])
 
 
     k_folds = functions.get_num_folds()
     tmp_ppm = [None]*k_folds
-    return  sensor_data
+    # return  sensor_data
     for fold in range(k_folds):
         tmp_ppm[fold] = functions.predict_ppm(optimal_NNs[fold], sensor_data)
 
-    return sum(tmp_ppm)/k_folds
+    return sum(tmp_ppm)[0][0]/k_folds
 
-
+# def predict_pH(time, pH,):
+#     #insert model preduction here
+#     return 0
+#
+# def predict_T(time, pH,):
+#     #insert model preduction here
+#     return 0
 
 
 
