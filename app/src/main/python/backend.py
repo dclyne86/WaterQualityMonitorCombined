@@ -14,10 +14,17 @@ import numpy as np
 import file_management
 
 import tensorflow as tf
+import cloudinary
+import cloudinary.api
+import requests
+import shutil
+
+import os
 
 
 tf.keras.optimizers.RectifiedAdam = Adam
 k_folds = functions.get_num_folds()
+
 optimal_NNs = [None]*k_folds
 integrals = 0.
 time, pH, current, temperature = [], [], [], []
@@ -29,7 +36,7 @@ def transform_data(currTime, curCurrent, switchOn):
     if not switchOn and currTime < 50:
         time = []
         integrals = 0.0
-        return time, integrals
+        return integrals
 
     if currTime % 1 == 0:
         currTime -= 50
@@ -39,57 +46,50 @@ def transform_data(currTime, curCurrent, switchOn):
     if len(time) >= longest_range_for_diff:
         integrals = np.trapz(time[:longest_range_for_diff], current[:longest_range_for_diff])
 
-    return time, integrals
+    return integrals
 
 def download_models():
     global optimal_NNs
+    zip_public_id = f'{functions.get_model_folder_name()}.zip'  # Or provide the URL of the ZIP file
+    # Get the download URL for the ZIP file from Cloudinary
+    download_url = cloudinary.utils.cloudinary_url(zip_public_id,
+                                                   resource_type='raw')[0]
 
-    path = file_management.get_file_path()
+    response = requests.get(download_url, stream=True)
 
-    file_name = functions.get_model_folder_name()
+    path = os.path.join(os.environ['HOME'],
+                        f'{zip_public_id}')
+
+    with open(path, 'wb') as file:
+        for chunk in response.iter_content(chunk_size=128):
+            file.write(chunk)
+
+    shutil.unpack_archive(path, os.environ['HOME'])
 
     i = 0
+
     for filename in os.listdir(os.environ['HOME']):
-        if "Model " in filename:
-            optimal_NNs = load_model(os.path.join(os.environ['HOME'], f'{filename}'))
-            return optimal_NNs.optimizer
-            # optimal_NNs[i] = load_model(f".\\{folder_name}\\{filename}")
-            # print(optimal_NNs[i].optimizer)
-            # tmp = re.findall(r'\d+', filename)
-            # i+=1
+        if "Model " in filename and ".h5" in filename:
+            optimal_NNs[i] = load_model(os.path.join(os.environ['HOME'], f'{filename}'), compile=False)
 
-
-            # optimal_NNs[i] = load_model(os.path.join(os.environ['HOME'], f'{filename}') , optimizer=Adam(lr=0.001, decay=1e-5))
-            # optimal_NNs[i] = load_model(os.path.join(os.environ['HOME'], f'{filename}'), compile = False)
             i += 1
 
-
-    # return str(optimal_NNs)
-
-    # local_download_path = , f'{path}')
-
-    # for filename in os.path.join(os.environ['HOME'], f'{path}'):
-    #     return filename
-    #
-    #     if "Model" in filename:
-    #         #optimal_NNs[i] = load_model(f"{path}\\{filename}")
-    #         # TODO there could be some bugs here
-    #         optimal_NNs[i] = keras.load_model(os.path.join(os.environ['HOME'], f'{path}\\{filename}'))
-    #
-    #
-    #         #print(optimal_NNs[i].optimizer)
-    #         i+=1
-    # i = 0
-    # functions.load_from_cloud(k_folds)
-    # file_name = functions.get_model_folder_name()
+    return str(optimal_NNs)
 
 
 
 def predict_Cl(time, current, pH, temp, integrals):
 
-    sensor_data = np.array([time, current, pH, temp, integrals])
+    sensor_data = np.array([[time], [current], [pH], [temp], [integrals]])
+
+    import pandas as pd
+    # sensor_data = pd.DataFrame(sensor_data,
+    #                             columns=['Time', 'Current','pH', 'Temp', 'Integrals'])
+
+
     k_folds = functions.get_num_folds()
     tmp_ppm = [None]*k_folds
+    return  sensor_data
     for fold in range(k_folds):
         tmp_ppm[fold] = functions.predict_ppm(optimal_NNs[fold], sensor_data)
 

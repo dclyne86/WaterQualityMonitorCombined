@@ -48,6 +48,8 @@ public class SplashActivity extends AppCompatActivity {
 
     private static final int PERMISSION_RESPONSE = 2;
     private PyObject backend;
+    private PyObject functions;
+
     private final Python py = Python.getInstance();
 
     @Override
@@ -56,6 +58,7 @@ public class SplashActivity extends AppCompatActivity {
         setContentView(R.layout.activity_splash);
 
         backend = py.getModule("backend");
+        functions = py.getModule("functions");
 
 
         //getSupportActionBar().setTitle(R.string.title_splash);// TODO: 2017-11-29
@@ -96,7 +99,7 @@ public class SplashActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 final Intent intent = new Intent(SplashActivity.this,DeviceScanActivity.class);
-                // Log.d(TAG, "onClick: " + backend.callAttr("download_models").toString());
+                Log.d(TAG, "onClick: " + backend.callAttr("download_models").toString());
                 intent.putExtra(DeviceScanActivity.EXTRAS_SELECTED_APP, "WQM");
                 startActivity(intent);
             }

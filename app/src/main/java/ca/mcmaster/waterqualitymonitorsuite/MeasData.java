@@ -143,8 +143,9 @@ class MeasData {
         backend = py.getModule("backend");
         this.integral = transformIntegral(measTime, rawI, swOn);
 
-
-        //predictedChlorineValue = predictCl(measTime, rawI, rawE, rawT, integral);
+//        if (this.integral > 0.0) {
+            predictedChlorineValue = predictCl(measTime, rawI, rawE, rawT, integral);
+//        }
 
         timeStamp = new SimpleDateFormat("HH:mm:ss", Locale.CANADA).format(new Date());
 
@@ -152,9 +153,6 @@ class MeasData {
         avgOk = false;
         pH_stats = new double[5];
         t_stats = new double[5];
-
-
-
     }
 
     public void setpH_stats(double[] stats){
@@ -252,6 +250,8 @@ class MeasData {
         Log.d(TAG, String.format("predictCl: %.3f;  %.3f;  %.3f", measTime, rawClCurrent, integral));
 
 //        double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, temperature, integral).toString());
+        String strFcl = (backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, temperature, integral).toString());
+        Log.d(TAG, String.format("predictCl_: " +  strFcl));
 
         return 0;
     }
@@ -261,11 +261,12 @@ class MeasData {
         String strIntegral = backend.callAttr("transform_data",
                 measTime, rawClCurrent, switchOn).toString();
 
-        //double integral = Float.parseFloat(strIntegral);
-
         Log.d(TAG, "transformIntegral: " + strIntegral);
-        Log.d(TAG, "transformIntegral: " + String.valueOf(measTime));
 
+        double integral = Float.parseFloat(strIntegral);
+
+//        Log.d(TAG, "transformIntegral: " + String.valueOf(measTime));
+//
         return integral;
     }
 
