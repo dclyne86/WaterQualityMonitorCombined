@@ -17,6 +17,7 @@ import cloudinary
 import cloudinary.api
 import requests
 import shutil
+import sql_manager
 
 import os
 
@@ -52,19 +53,48 @@ def getIntegrals(time, current):
     return integrals
 
 def filterData():
+
+    grads = np.grad(current)
     if len(time) >= 50:
         l = 0
-        r = len(time) - 1
-        for
-    for i in time:
+        r = l + 1
 
+        for cg in grads:
+            if cg[l] > cg[r]:
+                r +=1
+                if (r - l) == longest_range_for_diff:
+                    integrals = np.trapz(time[l:r], current[l:r])
+
+                if (r - l) >= longest_range_for_diff:
+                    if cg[r] == cg[-1]:
+                        return np.array([time[l:r], current[l:r], pH[l:r], temp[l:r]])
+
+            else:
+                l+=1
+                r = l +1
 
     return 0
 
-def uploadtoCloud():
+def uploadtoCloud(concentration):
+    table_name = sql_manager.get_table_name()
+    engine = sql_manager.connect()
+
+    if len(time) >= 50:
+        tmp = np.ones(len(time))
+
+        return np.array([[time, current, pH, temp, tmp, tmp*integrals]])
+    # sensor_data = pd.DataFrame(sensor_data,
+    #                            columns=['Time', 'Current','pH', 'Temp', 'Rinse', 'Integrals', 'Concentration'])
+    #
+    #
+    # if not sql_manager.check_tables(engine, table_name):
+    #     pandas_to_sql(table_name, sensor_data, engine)
+    # else:
+    #
+    #     pandas_to_sql(table_name, sensor_data, engine)
+
 
     return 1
-
 
 
 def download_models():
@@ -95,13 +125,11 @@ def download_models():
 
     return str(optimal_NNs)
 
-
-
 def predict_Cl(time, current, pH, temp, integrals):
 
-    sensor_data = np.array([[time, current, pH, temp, 1, integrals]])
 
     import pandas as pd
+    sensor_data = np.array([[time, current, pH, temp, 1, integrals]])
     sensor_data = pd.DataFrame(sensor_data,
                                 columns=['Time', 'Current','pH', 'Temp', 'Rinse', 'Integrals'])
 

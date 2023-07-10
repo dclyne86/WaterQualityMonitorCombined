@@ -143,9 +143,9 @@ class MeasData {
         backend = py.getModule("backend");
         this.integral = transformIntegral(measTime, rawI, swOn);
 
-        if (this.integral > 0.0) {
+//        if (this.integral > 0.0) {
             predictedChlorineValue = predictCl(measTime, rawI, rawE, rawT, integral);
-        }
+//        }
 
         timeStamp = new SimpleDateFormat("HH:mm:ss", Locale.CANADA).format(new Date());
 
@@ -274,12 +274,15 @@ class MeasData {
 
 
         double clCurrent = rawClCurrent; // Properly offeset this
-        Log.d(TAG, String.format("predictCl: %.3f;  %.3f;  %.3f", measTime, rawClCurrent, integral));
 
 //        double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, Temp, integral).toString());
         double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, phValue, temperature, integral).toString());
 //        String strFcl = (backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, temperature, integral).toString());
-        Log.d(TAG, String.format("predictCl_: " +  String.format("%.3f", fcl)));
+        Log.d(TAG, String.format("predictCl: " +  String.format("%.3f", fcl) + String.format("predictCl: %.3f;  %.3f;  %.3f", measTime, rawClCurrent, integral)));
+        String strUploadCloud = (backend.callAttr("uploadtoCloud", fcl).toString());
+
+        Log.d(TAG, String.format("predictCl: " +  String.format(strUploadCloud)));
+
 
         return fcl;
     }

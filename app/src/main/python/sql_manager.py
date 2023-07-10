@@ -4,13 +4,13 @@ import functions
 
 from sqlalchemy import create_engine
 from sqlalchemy import text
-import logins
+import secret
 
 def get_creds_cloud():
-    server = logins.server
-    database =  logins.database
-    username =  logins.username
-    password = logins.password
+    server = secret.server
+    database =  secret.database
+    username =  secret.username
+    password = secret.password
     port = 3306
 
     con = f'mysql+pymysql://{username}:{password}@{server}/{database}'
@@ -20,7 +20,6 @@ def connect():
     engine = create_engine(
         get_creds_cloud(),
         pool_recycle=3600)
-
     return engine
 def get_table_name():
     return functions.get_table_name()
@@ -74,7 +73,6 @@ def sql_to_pandas(table_name, engine):
         # print("'level_0' parameter does not exist");
 
     return output
-
 
 
 def get_vals(table, col, val, engine):
