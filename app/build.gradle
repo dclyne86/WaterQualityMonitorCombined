@@ -39,6 +39,7 @@ android {
                 install "sqlalchemy"
                 install "cloudinary"
                 install "requests"
+                install "pymysql"
             }
         }
 
