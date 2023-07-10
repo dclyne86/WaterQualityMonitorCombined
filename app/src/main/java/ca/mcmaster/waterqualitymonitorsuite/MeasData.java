@@ -278,7 +278,7 @@ class MeasData {
 //        double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, Temp, integral).toString());
         double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, phValue, temperature, integral).toString());
 //        String strFcl = (backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, temperature, integral).toString());
-        Log.d(TAG, String.format("predictCl: " +  String.format("%.3f", fcl) + String.format("predictCl: %.3f;  %.3f;  %.3f", measTime, rawClCurrent, integral)));
+        Log.d(TAG, String.format("predictCl: " +  String.format("%.3f %.3f;  %.3f;  %.3f", fcl , measTime, rawClCurrent, integral)));
         String strUploadCloud = (backend.callAttr("uploadtoCloud", fcl).toString());
 
         Log.d(TAG, String.format("predictCl: " +  String.format(strUploadCloud)));

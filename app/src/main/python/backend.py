@@ -11,6 +11,8 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.optimizers import Adam
 
 import numpy as np
+import pandas as pd
+
 
 import tensorflow as tf
 import cloudinary
@@ -42,6 +44,7 @@ def manage_data(currTime, curCurrent, switchOn):
         currTime -= 50
         time.append(currTime)
         current.append(curCurrent)
+        pH.append(predict_pH(time, ))
 
     if len(time) >= longest_range_for_diff:
         integrals = getIntegrals(time, current)
@@ -79,12 +82,12 @@ def uploadtoCloud(concentration):
     table_name = sql_manager.get_table_name()
     engine = sql_manager.connect()
 
-    if len(time) >= 50:
-        tmp = np.ones(len(time))
+    # if len(time) >= 50:
+    tmp = np.ones(len(time))
 
-        return np.array([[time, current, pH, temp, tmp, tmp*integrals]])
-    # sensor_data = pd.DataFrame(sensor_data,
-    #                            columns=['Time', 'Current','pH', 'Temp', 'Rinse', 'Integrals', 'Concentration'])
+    entry = np.array([np.asarray(time), np.asarray(current), np.asarray(pH), np.asarray(temperature), tmp, tmp*integrals])
+    return entry
+        # pd.DataFrame(entry, columns=['Time', 'Current','pH', 'Temp', 'Rinse', 'Integrals', 'Concentration'])
     #
     #
     # if not sql_manager.check_tables(engine, table_name):
@@ -128,7 +131,6 @@ def download_models():
 def predict_Cl(time, current, pH, temp, integrals):
 
 
-    import pandas as pd
     sensor_data = np.array([[time, current, pH, temp, 1, integrals]])
     sensor_data = pd.DataFrame(sensor_data,
                                 columns=['Time', 'Current','pH', 'Temp', 'Rinse', 'Integrals'])
@@ -142,13 +144,13 @@ def predict_Cl(time, current, pH, temp, integrals):
 
     return sum(tmp_ppm)[0][0]/k_folds
 
-# def predict_pH(time, pH,):
-#     #insert model preduction here
-#     return 0
-#
-# def predict_T(time, pH,):
-#     #insert model preduction here
-#     return 0
+def predict_pH(time, rawpH):
+    #insert model preduction here
+    return rawpH
+
+def predict_T(time, rawT):
+    #insert model preduction here
+    return rawT
 
 
 
