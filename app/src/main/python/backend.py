@@ -51,6 +51,22 @@ def getIntegrals(time, current):
     integrals = np.trapz(time[:longest_range_for_diff], current[:longest_range_for_diff])
     return integrals
 
+def filterData():
+    if len(time) >= 50:
+        l = 0
+        r = len(time) - 1
+        for
+    for i in time:
+
+
+    return 0
+
+def uploadtoCloud():
+
+    return 1
+
+
+
 def download_models():
     global optimal_NNs
     zip_public_id = f'{functions.get_model_folder_name()}.zip'  # Or provide the URL of the ZIP file
