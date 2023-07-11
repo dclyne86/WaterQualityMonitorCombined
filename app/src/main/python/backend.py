@@ -31,12 +31,16 @@ optimal_NNs = [None]*k_folds
 integrals = 0.
 time, pH, current, temperature = [], [], [], []
 longest_range_for_diff = 26
+predictedFcl = 0
 
-def manage_data(currTime, curCurrent, switchOn):
+def manage_data(currTime, curCurrent, rawpH, rawTemp, switchOn):
     global integrals, time, current, pH, temperature
 
     if not switchOn and currTime < 50:
         time = []
+        pH = []
+        temperature = []
+        current = []
         integrals = 0.0
         return integrals
 
@@ -44,7 +48,8 @@ def manage_data(currTime, curCurrent, switchOn):
         currTime -= 50
         time.append(currTime)
         current.append(curCurrent)
-        pH.append(predict_pH(time, ))
+        pH.append(predict_pH(time, rawpH))
+        temperature.append(predict_pH(time, rawTemp))
 
     if len(time) >= longest_range_for_diff:
         integrals = getIntegrals(time, current)
@@ -52,8 +57,7 @@ def manage_data(currTime, curCurrent, switchOn):
     return integrals
 
 def getIntegrals(time, current):
-    integrals = np.trapz(time[:longest_range_for_diff], current[:longest_range_for_diff])
-    return integrals
+    return np.trapz(time[:longest_range_for_diff], current[:longest_range_for_diff])
 
 def filterData():
 
@@ -81,22 +85,21 @@ def filterData():
 def uploadtoCloud(concentration):
     table_name = sql_manager.get_table_name()
     engine = sql_manager.connect()
+    entry = []
+    if len(time) >= longest_range_for_diff:
+        tmp = np.ones(len(time))
 
-    # if len(time) >= 50:
-    tmp = np.ones(len(time))
+        entry = np.array([np.asarray(time), np.asarray(current), np.asarray(pH), np.asarray(temperature), tmp, tmp*integrals])
+        df = pd.DataFrame(entry.T, columns=['Time', 'Current','pH', 'Temp', 'Rinse', 'Integrals'])
 
-    entry = np.array([np.asarray(time), np.asarray(current), np.asarray(pH), np.asarray(temperature), tmp, tmp*integrals])
-    return entry
-        # pd.DataFrame(entry, columns=['Time', 'Current','pH', 'Temp', 'Rinse', 'Integrals', 'Concentration'])
-    #
-    #
-    # if not sql_manager.check_tables(engine, table_name):
-    #     pandas_to_sql(table_name, sensor_data, engine)
-    # else:
-    #
-    #     pandas_to_sql(table_name, sensor_data, engine)
-
-
+        if df['Time'][len(df)-1] >= 50:
+            if not sql_manager.check_tables(engine, table_name):
+                sql_manager.pandas_to_sql(table_name, df, engine)
+                return "Created new Table"
+            else:
+                sql_manager.pandas_to_sql_if_exists(table_name, df, engine, 'append')
+                return "Appended to Table"
+        return df
     return 1
 
 
@@ -142,7 +145,8 @@ def predict_Cl(time, current, pH, temp, integrals):
     for fold in range(k_folds):
         tmp_ppm[fold] = functions.predict_ppm(optimal_NNs[fold], sensor_data)
 
-    return sum(tmp_ppm)[0][0]/k_folds
+    predictedFcl = sum(tmp_ppm)[0][0]/k_folds
+    return predictedFcl
 
 def predict_pH(time, rawpH):
     #insert model preduction here

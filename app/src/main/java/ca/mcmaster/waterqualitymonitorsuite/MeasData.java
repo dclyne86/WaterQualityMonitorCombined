@@ -141,7 +141,7 @@ class MeasData {
 
 
         backend = py.getModule("backend");
-        this.integral = transformIntegral(measTime, rawI, swOn);
+        this.integral = manageData(measTime, rawI, rawE, rawT, swOn);
 
 //        if (this.integral > 0.0) {
             predictedChlorineValue = predictCl(measTime, rawI, rawE, rawT, integral);
@@ -239,11 +239,12 @@ class MeasData {
     }
 
 
-    private double transformIntegral(double measTime, double rawClCurrent, boolean switchOn) {
-
+    private double manageData(double measTime, double rawClCurrent, double rawpH, double rawTemp, boolean switchOn) {
+//    puts 50 s worth of data in a list, and also carries out the integrals.
+//        Ideal to separate these two tasks into two different functions TODO
 
         String strIntegral = backend.callAttr("manage_data",
-                measTime, rawClCurrent, switchOn).toString();
+                measTime, rawClCurrent, rawpH, rawTemp, switchOn).toString();
         Log.d(TAG, "transformIntegral: " + strIntegral);
 
         double integral = Float.parseFloat(strIntegral);
