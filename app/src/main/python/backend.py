@@ -30,11 +30,13 @@ k_folds = functions.get_num_folds()
 optimal_NNs = [None]*k_folds
 integrals = 0.
 time, pH, current, temperature = [], [], [], []
+concentration = []
 longest_range_for_diff = 26
 predictedFcl = 0
+fclOffset = 6.72
 
 def manage_data(currTime, curCurrent, rawpH, rawTemp, switchOn):
-    global integrals, time, current, pH, temperature
+    global integrals, time, current, pH, temperature, concentration
 
     if not switchOn and currTime < 50:
         time = []
@@ -42,14 +44,16 @@ def manage_data(currTime, curCurrent, rawpH, rawTemp, switchOn):
         temperature = []
         current = []
         integrals = 0.0
+        concentration = []
         return integrals
 
     if currTime % 1 == 0:
         currTime -= 50
         time.append(currTime)
-        current.append(curCurrent)
+        current.append(-curCurrent+fclOffset)
         pH.append(predict_pH(time, rawpH))
         temperature.append(predict_pH(time, rawTemp))
+        concentration.append(predictedFcl)
 
     if len(time) >= longest_range_for_diff:
         integrals = getIntegrals(time, current)
@@ -59,38 +63,17 @@ def manage_data(currTime, curCurrent, rawpH, rawTemp, switchOn):
 def getIntegrals(time, current):
     return np.trapz(time[:longest_range_for_diff], current[:longest_range_for_diff])
 
-def filterData():
-
-    grads = np.grad(current)
-    if len(time) >= 50:
-        l = 0
-        r = l + 1
-
-        for cg in grads:
-            if cg[l] > cg[r]:
-                r +=1
-                if (r - l) == longest_range_for_diff:
-                    integrals = np.trapz(time[l:r], current[l:r])
-
-                if (r - l) >= longest_range_for_diff:
-                    if cg[r] == cg[-1]:
-                        return np.array([time[l:r], current[l:r], pH[l:r], temp[l:r]])
-
-            else:
-                l+=1
-                r = l +1
-
-    return 0
-
-def uploadtoCloud(concentration):
+def uploadtoCloud():
     table_name = sql_manager.get_table_name()
     engine = sql_manager.connect()
+
+
     entry = []
     if len(time) >= longest_range_for_diff:
         tmp = np.ones(len(time))
 
-        entry = np.array([np.asarray(time), np.asarray(current), np.asarray(pH), np.asarray(temperature), tmp, tmp*integrals])
-        df = pd.DataFrame(entry.T, columns=['Time', 'Current','pH', 'Temp', 'Rinse', 'Integrals'])
+        entry = np.array([np.asarray(time), np.asarray(current), np.asarray(pH), np.asarray(temperature), tmp, tmp*integrals, concentration])
+        df = pd.DataFrame(entry.T, columns=['Time', 'Current','pH', 'Temp', 'Rinse', 'Integrals', 'Concentration'])
 
         if df['Time'][len(df)-1] >= 50:
             if not sql_manager.check_tables(engine, table_name):
@@ -100,6 +83,7 @@ def uploadtoCloud(concentration):
                 sql_manager.pandas_to_sql_if_exists(table_name, df, engine, 'append')
                 return "Appended to Table"
         return df
+
     return 1
 
 
@@ -132,12 +116,11 @@ def download_models():
     return str(optimal_NNs)
 
 def predict_Cl(time, current, pH, temp, integrals):
-
+    global predictedFcl
 
     sensor_data = np.array([[time, current, pH, temp, 1, integrals]])
     sensor_data = pd.DataFrame(sensor_data,
-                                columns=['Time', 'Current','pH', 'Temp', 'Rinse', 'Integrals'])
-
+                                columns=['Time', 'Current','pH', 'Temperature', 'Rinse', 'Integrals'])
 
     k_folds = functions.get_num_folds()
     tmp_ppm = [None]*k_folds

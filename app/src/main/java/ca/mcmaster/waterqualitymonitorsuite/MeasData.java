@@ -139,12 +139,12 @@ class MeasData {
         chlorineValue = calcCl(rawI); //chlorineValue = calcCl(rawI, phValue, temperature);
         alkalinityValue = calcAlk(rawA); //chlorineValue = calcCl(rawI, phValue, temperature);
 
-
+        // Divided by 1000 because nA becomes uA
         backend = py.getModule("backend");
-        this.integral = manageData(measTime, rawI, rawE, rawT, swOn);
+        this.integral = manageData(measTime, rawI/1000, rawE, rawT, swOn);
 
 //        if (this.integral > 0.0) {
-            predictedChlorineValue = predictCl(measTime, rawI, rawE, rawT, integral);
+            predictedChlorineValue = predictCl(measTime, rawI/1000, rawE, rawT, integral);
 //        }
 
         timeStamp = new SimpleDateFormat("HH:mm:ss", Locale.CANADA).format(new Date());
@@ -279,10 +279,10 @@ class MeasData {
 //        double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, Temp, integral).toString());
         double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, phValue, temperature, integral).toString());
 //        String strFcl = (backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, temperature, integral).toString());
-        Log.d(TAG, String.format("predictCl: " +  String.format("%.3f %.3f;  %.3f;  %.3f", fcl , measTime, rawClCurrent, integral)));
-        String strUploadCloud = (backend.callAttr("uploadtoCloud", fcl).toString());
+        Log.d(TAG, "predictCl:" + String.format("%.3f %.3f;  %.3f;  %.3f", fcl , measTime, rawClCurrent, integral));
+        String strUploadCloud = (backend.callAttr("uploadtoCloud").toString());
 
-        Log.d(TAG, String.format("predictCl: " +  String.format(strUploadCloud)));
+//        Log.d(TAG, String.format("predictCl: " +  String.format(strUploadCloud)));
 
 
         return fcl;
