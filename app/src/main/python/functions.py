@@ -9,7 +9,7 @@ import shutil
 import os
 
 def get_model_folder_name():
-    return "gold_fc_h5"
+    return "gold_fc_h5_fc_pH_reg"
 
 def get_table_name():
     return 'gold_fc'

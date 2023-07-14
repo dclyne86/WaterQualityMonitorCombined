@@ -141,10 +141,10 @@ class MeasData {
 
         // Divided by 1000 because nA becomes uA
         backend = py.getModule("backend");
-        this.integral = manageData(measTime, rawI/1000, rawE, rawT, swOn);
+        this.integral = manageData(measTime, rawI/1000, phValue, temperature, swOn);
 
 //        if (this.integral > 0.0) {
-            predictedChlorineValue = predictCl(measTime, rawI/1000, rawE, rawT, integral);
+            predictedChlorineValue = predictCl(measTime, rawI/1000, phValue, temperature, integral);
 //        }
 
         timeStamp = new SimpleDateFormat("HH:mm:ss", Locale.CANADA).format(new Date());
@@ -188,7 +188,7 @@ class MeasData {
     //pH calculation from supplied potential and temperature
     //broken up to simplify calculation, f_* = function of *
     private double calcPh(double e, double t){
-        Log.d(TAG, String.format("calcCl: e: %.3f t: %.3f",e,t));
+        Log.d(TAG, String.format("calcpH: e: %.3f t: %.3f",e,t));
         double sens;
         //determine sensitivity to use based on voltage
         if(phSensLo < 0 && phSensHi < 0) {
@@ -215,7 +215,7 @@ class MeasData {
     //simplified pH calculation from supplied potential only
     //broken up to simplify calculation, f_* = function of *
     private double calcPh(double e){
-        Log.d(TAG, String.format("calcCl: e: %.3f",e));
+        Log.d(TAG, String.format("calcpH: e: %.3f",e));
         double sens;
         //determine sensitivity to use based on voltage
         if(phSensLo < 0 && phSensHi < 0) {
@@ -234,7 +234,7 @@ class MeasData {
             result = 14.0;
         else if (result < 0)
             result = 0.0;
-        Log.d(TAG, String.format("calcPh: f_e: %.3f pH: %.2f",f_e,result));
+//        Log.d(TAG, String.format("calcPh: f_e: %.3f pH: %.2f",f_e,result));
         return result;
     }
 
@@ -265,25 +265,14 @@ class MeasData {
     }
 
 
-    private double predictCl(double measTime, double rawClCurrent, double rawpH, double rawTemp, double integral) {
+    private double predictCl(double measTime, double rawClCurrent, double pH, double temp, double integral) {
         // Inside the python code, check pH and Temp if they're actual values or something
-
-        double pH = calcPh(rawpH);
-//        double pH = predictPH(rawpH);
-        double Temp = calcT(rawTemp);
-//        double Temp = predictT(rawTemp);
-
-
-        double clCurrent = rawClCurrent; // Properly offeset this
 
 //        double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, Temp, integral).toString());
         double fcl = Float.parseFloat(backend.callAttr("predict_Cl", measTime, rawClCurrent, phValue, temperature, integral).toString());
-//        String strFcl = (backend.callAttr("predict_Cl", measTime, rawClCurrent, pH, temperature, integral).toString());
-        Log.d(TAG, "predictCl:" + String.format("%.3f %.3f;  %.3f;  %.3f", fcl , measTime, rawClCurrent, integral));
+
+        Log.d(TAG, "predictCl: " + String.format("%.3f %.3f;  %.3f;  %.3f, pH %.3f, %.3f", fcl , measTime, rawClCurrent, integral, pH, temp));
         String strUploadCloud = (backend.callAttr("uploadtoCloud").toString());
-
-//        Log.d(TAG, String.format("predictCl: " +  String.format(strUploadCloud)));
-
 
         return fcl;
     }
@@ -310,7 +299,7 @@ class MeasData {
         if (result < 0)
             result = 0.0;
 
-        Log.d(TAG, String.format("calcCl: k: %.3f f_i: %.3f sf_t: %.3f f_t: %.3f f_ph_t: %.3f Cl: %.3f",k,f_i,sf_t,f_t,f_ph_t,result));
+        Log.d(TAG, String.format("calcCl: f_i: %.3f sf_t: %.3f f_t: %.3f f_ph_t: %.3f Cl: %.3f",k,f_i,sf_t,f_t,f_ph_t,result));
         return result;
     }
     //simplified free Cl calculation, does not consider pH level or temperate
@@ -323,7 +312,7 @@ class MeasData {
         k = 1.0;
         f_i = i - Cl_Cal_i;
 
-        Log.d(TAG, String.format("calcCl: Current: %.3f  OFFSET: %.3f",i, Cl_Cal_i));
+//        Log.d(TAG, String.format("calcCl: Current: %.3f  OFFSET: %.3f",i, Cl_Cal_i));
 
         result = k*(f_i/Cl_Sens) + Cl_Cal_lvl;
 
@@ -331,7 +320,7 @@ class MeasData {
         if (result < 0)
             result = 0.0;
 
-        //Log.d(TAG, String.format("calcCl: k: %.3f f_i: %.3f Cl: %.3f",k,f_i,result));
+        Log.d(TAG, String.format("calcCl: k: %.3f f_i: %.3f OFFESET: %.3f Cl: %.3f  ",k,f_i,Cl_Cal_i, result));
         return result;
     }
     //simplified Alk calculation, does not consider pH level or temperate

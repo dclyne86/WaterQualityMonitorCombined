@@ -2,7 +2,7 @@
 # ## Importing Data
 
 #
-# -*- coding: utf-8 -*-
+
 # Regression Example With Boston Dataset: Standardized and Wider
 import os
 import functions
@@ -29,18 +29,25 @@ k_folds = functions.get_num_folds()
 
 optimal_NNs = [None]*k_folds
 integrals = 0.
-time, pH, current, temperature = [], [], [], []
+time, all_pH, current, temperature = [], [], [], []
 concentration = []
 longest_range_for_diff = 26
 predictedFcl = 0
-fclOffset = 6.72
 
-def manage_data(currTime, curCurrent, rawpH, rawTemp, switchOn):
-    global integrals, time, current, pH, temperature, concentration
+def correctCl(rawI):
+    offset = 0.109
+
+    corrected = -rawI + offset
+    return corrected
+
+
+
+def manage_data(currTime, curCurrent, pH, T, switchOn):
+    global integrals, time, current, all_pH, temperature, concentration
 
     if not switchOn and currTime < 50:
         time = []
-        pH = []
+        all_pH = []
         temperature = []
         current = []
         integrals = 0.0
@@ -50,9 +57,9 @@ def manage_data(currTime, curCurrent, rawpH, rawTemp, switchOn):
     if currTime % 1 == 0:
         currTime -= 50
         time.append(currTime)
-        current.append(-curCurrent+fclOffset)
-        pH.append(predict_pH(time, rawpH))
-        temperature.append(predict_pH(time, rawTemp))
+        current.append(correctCl(curCurrent))
+        all_pH.append(7)
+        temperature.append(30)
         concentration.append(predictedFcl)
 
     if len(time) >= longest_range_for_diff:
@@ -61,7 +68,7 @@ def manage_data(currTime, curCurrent, rawpH, rawTemp, switchOn):
     return integrals
 
 def getIntegrals(time, current):
-    return np.trapz(time[:longest_range_for_diff], current[:longest_range_for_diff])
+    return -np.trapz(time[:longest_range_for_diff], current[:longest_range_for_diff])
 
 def uploadtoCloud():
     table_name = sql_manager.get_table_name()
@@ -72,7 +79,7 @@ def uploadtoCloud():
     if len(time) >= longest_range_for_diff:
         tmp = np.ones(len(time))
 
-        entry = np.array([np.asarray(time), np.asarray(current), np.asarray(pH), np.asarray(temperature), tmp, tmp*integrals, concentration])
+        entry = np.array([np.asarray(time), np.asarray(current), np.asarray(all_pH), np.asarray(temperature), tmp, tmp*integrals, concentration])
         df = pd.DataFrame(entry.T, columns=['Time', 'Current','pH', 'Temp', 'Rinse', 'Integrals', 'Concentration'])
 
         if df['Time'][len(df)-1] >= 50:
@@ -84,7 +91,7 @@ def uploadtoCloud():
                 return "Appended to Table"
         return df
 
-    return 1
+    return "pending"
 
 
 def download_models():
@@ -118,9 +125,12 @@ def download_models():
 def predict_Cl(time, current, pH, temp, integrals):
     global predictedFcl
 
-    sensor_data = np.array([[time, current, pH, temp, 1, integrals]])
+    if integrals == 0:
+        return 0
+
+    sensor_data = np.array([[time, correctCl(current), pH, 30, 1, integrals]])
     sensor_data = pd.DataFrame(sensor_data,
-                                columns=['Time', 'Current','pH', 'Temperature', 'Rinse', 'Integrals'])
+                                    columns=['Time', 'Current','pH', 'Temperature', 'Rinse', 'Integrals'])
 
     k_folds = functions.get_num_folds()
     tmp_ppm = [None]*k_folds
